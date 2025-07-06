@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByteMe - Simulador de Processador</title>
+    <style>
+        :root {
+            /* Tema Escuro (padrão) */
+            --bg-primary: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --bg-secondary: rgba(0, 0, 0, 0.3);
+            --bg-tertiary: rgba(0, 0, 0, 0.5);
+            --text-primary: #fff;
+            --text-secondary: #4fc3f7;
+            --text-success: #c8e6c9;
+            --text-error: #ffcdd2;
+            --border-primary: rgba(255, 255, 255, 0.1);
+            --border-secondary: rgba(255, 255, 255, 0.2);
+            --highlight-bg: rgba(255, 193, 7, 0.3);
+            --highlight-border: #ffc107;
+            --scrollbar-track: rgba(0, 0, 0, 0.2);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.3);
+            --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
+        }
+
+        [data-theme="light"] {
+            /* Tema Claro */
+            --bg-primary: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            --bg-secondary: rgba(255, 255, 255, 0.8);
+            --bg-tertiary: rgba(255, 255, 255, 0.9);
+            --text-primary: #333;
+            --text-secondary: #1976d2;
+            --text-success: #2e7d32;
+            --text-error: #c62828;
+            --border-primary: rgba(0, 0, 0, 0.1);
+            --border-secondary: rgba(0, 0, 0, 0.2);
+            --highlight-bg: rgba(255, 193, 7, 0.5);
+            --highlight-border: #ff8f00;
+            --scrollbar-track: rgba(0, 0, 0, 0.1);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.3);
+            --scrollbar-thumb-hover: rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            color: var(--text-secondary);
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 20px;
+            padding: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .help-btn {
+            background: linear-gradient(45deg, #4caf50, #81c784);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .help-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 70px);
+            gap: 10px;
+            padding: 0 10px 10px 10px;
+        }
+
+        .left-panel {
+            flex: 1;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-primary);
+        }
+
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-primary);
+        }
+
+        h2 {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            font-size: 18px;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .code-editor {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-secondary);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 10px;
+            resize: none;
+            outline: none;
+            line-height: 1.4;
+        }
+
+        .code-section {
+            display: flex;
+            flex: 1;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .assembly-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .machine-code-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .machine-code-display {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-secondary);
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-primary);
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .examples {
+            height: 150px;
+            overflow-y: auto;
+        }
+
+        .example-btn {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            border-radius: 5px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .example-btn:hover {
+            background: rgba(76, 175, 80, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #2196f3, #21cbf3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #ff9800, #ffb74d);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4caf50, #81c784);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #ef5350);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .registers {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .register {
+            background: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid var(--border-primary);
+            transition: all 0.3s ease;
+        }
+
+        .register.highlight {
+            background: var(--highlight-bg);
+            border-color: var(--highlight-border);
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .register-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .register-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .memory-display {
+            height: 250px;
+            overflow-y: auto;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-secondary);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .memory-row {
+            margin-bottom: 2px;
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .memory-row.highlight {
+            background: var(--highlight-bg);
+            border: 1px solid var(--highlight-border);
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: var(--text-success);
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            color: var(--text-error);
+        }
+
+        .flags {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .flag {
+            padding: 5px;
+            text-align: center;
+            border-radius: 3px;
+            font-size: 11px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+        }
+
+        .flag.active {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #f44336;
+            color: var(--text-error);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid var(--border-secondary);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+
+        .input-content {
+            width: 300px;
+        }
+
+        .help-content {
+            width: 800px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-secondary);
+            border-radius: 5px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 16px;
+            margin: 15px 0;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .output-area {
+            height: 80px;
+            overflow-y: auto;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-secondary);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+            color: var(--text-success);
+            margin-bottom: 15px;
+        }
+
+        .help-section {
+            margin-bottom: 20px;
+        }
+
+        .help-section h3 {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .instruction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .instruction-table th,
+        .instruction-table td {
+            padding: 8px;
+            border: 1px solid var(--border-primary);
+            text-align: left;
+            font-size: 12px;
+        }
+
+        .instruction-table th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: bold;
+        }
+
+        .instruction-table td {
+            background: var(--bg-tertiary);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="header">
+        <h1>🖥️ ByteMe - Simulador de Processador</h1>
+        <div class="header-controls">
+            <div class="theme-toggle" id="themeToggle">
+                <span id="themeIcon">🌙</span>
+            </div>
+            <button class="help-btn" id="helpBtn">?</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Painel Esquerdo - Editor de Assembly -->
+        <div class="left-panel">
+            <div class="code-section">
+                <div class="assembly-area">
+                    <h2>📝 Editor Assembly</h2>
+                    <textarea id="codeEditor" class="code-editor" placeholder="Digite o código assembly aqui...
+
+Exemplo:
+; Solicita um número e imprime o dobro
+INPUT A      ; Lê um número para o registrador A
+ADD A, A     ; Dobra o valor (A = A + A)
+PRINT A      ; Imprime o resultado
+HALT         ; Para o programa"></textarea>
+                </div>
+                
+                <div class="machine-code-area">
+                    <h2>🔧 Código de Máquina</h2>
+                    <div id="machineCodeDisplay" class="machine-code-display">
+                        <!-- O código de máquina aparecerá aqui após a montagem -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="assembleBtn">🔧 Montar</button>
+                <button class="btn btn-success" id="runBtn" disabled>▶️ Executar</button>
+                <button class="btn btn-secondary" id="stepBtn" disabled>⏭️ Passo</button>
+                <button class="btn btn-danger" id="resetBtn">🔄 Reset</button>
+                <button class="btn btn-primary" id="loadBtn">📁 Carregar</button>
+                <button class="btn btn-secondary" id="saveBtn">💾 Salvar</button>
+            </div>
+
+            <h2>📚 Exemplos</h2>
+            <div class="examples">
+                <button class="example-btn" data-example="input_print">1. Solicitar número e imprimir</button>
+                <button class="example-btn" data-example="input_double">2. Solicitar número e imprimir dobro</button>
+                <button class="example-btn" data-example="three_max">3. Maior de três números</button>
+                <button class="example-btn" data-example="ten_max">4. Maior de dez números</button>
+                <button class="example-btn" data-example="input_until_zero">5. Maior até digitar 0</button>
+                <button class="example-btn" data-example="factorial">6. Calcular fatorial</button>
+                <button class="example-btn" data-example="reverse_name">7. Nome ao contrário</button>
+            </div>
+        </div>
+
+        <!-- Painel Direito - Estado do Processador -->
+        <div class="right-panel">
+            <!-- Status -->
+            <div class="section">
+                <div id="status" class="status">Pronto para montar código</div>
+            </div>
+
+            <!-- Registradores -->
+            <div class="section">
+                <h2>🎛️ Registradores</h2>
+                <div class="registers">
+                    <div class="register" id="regA">
+                        <div class="register-label">A</div>
+                        <div class="register-value">0x00</div>
+                    </div>
+                    <div class="register" id="regB">
+                        <div class="register-label">B</div>
+                        <div class="register-value">0x00</div>
+                    </div>
+                    <div class="register" id="regC">
+                        <div class="register-label">C</div>
+                        <div class="register-value">0x00</div>
+                    </div>
+                    <div class="register" id="regD">
+                        <div class="register-label">D</div>
+                        <div class="register-value">0x00</div>
+                    </div>
+                </div>
+                
+                <div class="register" style="margin-top: 10px;">
+                    <div class="register-label">PC (Program Counter)</div>
+                    <div class="register-value" id="pcValue">0x00</div>
+                </div>
+
+                <h2 style="margin-top: 15px; margin-bottom: 10px;">🚩 Flags</h2>
+                <div class="flags">
+                    <div class="flag" id="flagZero">Zero</div>
+                    <div class="flag" id="flagCarry">Carry</div>
+                    <div class="flag" id="flagNegative">Negative</div>
+                    <div class="flag" id="flagOverflow">Overflow</div>
+                </div>
+            </div>
+
+            <!-- Saída -->
+            <div class="section">
+                <h2>🖥️ Saída do Programa</h2>
+                <div id="outputArea" class="output-area"></div>
+            </div>
+
+            <!-- Memória -->
+            <div class="section" style="flex: 1;">
+                <h2>💾 Memória</h2>
+                <div id="memoryDisplay" class="memory-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de entrada -->
+    <div id="inputModal" class="modal">
+        <div class="modal-content input-content">
+            <h2 style="margin-bottom: 15px;">📥 Entrada de Dados</h2>
+            <p id="inputPrompt">Digite um valor:</p>
+            <input type="text" id="inputField" class="input-field" placeholder="Digite aqui...">
+            <div class="modal-buttons">
+                <button class="btn btn-success" id="inputOkBtn">✅ OK</button>
+                <button class="btn btn-danger" id="inputCancelBtn">❌ Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de ajuda -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content help-content">
+            <button class="close-btn" id="closeHelpBtn">&times;</button>
+            <h2 style="margin-bottom: 20px;">📖 Guia de Comandos Assembly</h2>
+            
+            <div class="help-section">
+                <h3>📋 Instruções de Transferência de Dados</h3>
+                <table class="instruction-table">
+                    <tr><th>Comando</th><th>Sintaxe</th><th>Descrição</th><th>Exemplo</th></tr>
+                    <tr><td>LOAD_REG</td><td>LOAD_REG reg, valor</td><td>Carrega valor imediato no registrador</td><td>LOAD_REG A, 10</td></tr>
+                    <tr><td>LOAD_MEM</td><td>LOAD_MEM reg, endereço</td><td>Carrega valor da memória no registrador</td><td>LOAD_MEM A, 100</td></tr>
+                    <tr><td>STORE</td><td>STORE reg, endereço</td><td>Armazena registrador na memória</td><td>STORE A, 100</td></tr>
+                    <tr><td>MOV</td><td>MOV dest, origem</td><td>Copia valor entre registradores</td><td>MOV A, B</td></tr>
+                </table>
+            </div>
+
+            <div class="help-section">
+                <h3>🧮 Instruções Aritméticas</h3>
+                <table class="instruction-table">
+                    <tr><th>Comando</th><th>Sintaxe</th><th>Descrição</th><th>Exemplo</th></tr>
+                    <tr><td>ADD</td><td>ADD reg1, reg2/valor</td><td>Adição: reg1 = reg1 + reg2/valor</td><td>ADD A, B ou ADD A, 5</td></tr>
+                    <tr><td>SUB</td><td>SUB reg1, reg2/valor</td><td>Subtração: reg1 = reg1 - reg2/valor</td><td>SUB A, B ou SUB A, 3</td></tr>
+                    <tr><td>MUL</td><td>MUL reg1, reg2/valor</td><td>Multiplicação: reg1 = reg1 * reg2/valor</td><td>MUL A, B ou MUL A, 2</td></tr>
+                    <tr><td>DIV</td><td>DIV reg1, reg2/valor</td><td>Divisão: reg1 = reg1 / reg2/valor</td><td>DIV A, B ou DIV A, 4</td></tr>
+                </table>
+            </div>
+
+            <div class="help-section">
+                <h3>🔀 Instruções Lógicas</h3>
+                <table class="instruction-table">
+                    <tr><th>Comando</th><th>Sintaxe</th><th>Descrição</th><th>Exemplo</th></tr>
+                    <tr><td>AND</td><td>AND reg1, reg2</td><td>E lógico bit a bit</td><td>AND A, B</td></tr>
+                    <tr><td>OR</td><td>OR reg1, reg2</td><td>OU lógico bit a bit</td><td>OR A, B</td></tr>
+                    <tr><td>XOR</td><td>XOR reg1, reg2</td><td>OU exclusivo bit a bit</td><td>XOR A, B</td></tr>
+                    <tr><td>NOT</td><td>NOT reg</td><td>Negação bit a bit</td><td>NOT A</td></tr>
+                </table>
+            </div>
+
+            <div class="help-section">
+                <h3>🔄 Instruções de Controle de Fluxo</h3>
+                <table class="instruction-table">
+                    <tr><th>Comando</th><th>Sintaxe</th><th>Descrição</th><th>Exemplo</th></tr>
+                    <tr><td>CMP</td><td>CMP reg1, reg2</td><td>Compara dois registradores (atualiza flags)</td><td>CMP A, B</td></tr>
+                    <tr><td>JMP</td><td>JMP endereço/rótulo</td><td>Salto incondicional</td><td>JMP loop</td></tr>
+                    <tr><td>JZ/JE</td><td>JZ endereço/rótulo</td><td>Salta se zero/igual</td><td>JZ fim</td></tr>
+                    <tr><td>JNZ/JNE</td><td>JNZ endereço/rótulo</td><td>Salta se não zero/diferente</td><td>JNZ loop</td></tr>
+                    <tr><td>JGT</td><td>JGT endereço/rótulo</td><td>Salta se maior que</td><td>JGT maior</td></tr>
+                    <tr><td>JLT</td><td>JLT endereço/rótulo</td><td>Salta se menor que</td><td>JLT menor</td></tr>
+                    <tr><td>JGE</td><td>JGE endereço/rótulo</td><td>Salta se maior ou igual</td><td>JGE maior_igual</td></tr>
+                    <tr><td>JLE</td><td>JLE endereço/rótulo</td><td>Salta se menor ou igual</td><td>JLE menor_igual</td></tr>
+                </table>
+            </div>
+
+            <div class="help-section">
+                <h3>📺 Instruções de Entrada/Saída</h3>
+                <table class="instruction-table">
+                    <tr><th>Comando</th><th>Sintaxe</th><th>Descrição</th><th>Exemplo</th></tr>
+                    <tr><td>INPUT</td><td>INPUT reg</td><td>Solicita entrada do usuário</td><td>INPUT A</td></tr>
+                    <tr><td>PRINT</td><td>PRINT reg</td><td>Imprime valor do registrador</td><td>PRINT A</td></tr>
+                    <tr><td>PRINT_CHAR</td><td>PRINT_CHAR reg</td><td>Imprime caractere ASCII do registrador</td><td>PRINT_CHAR A</td></tr>
+                    <tr><td>PRINT_STR</td><td>PRINT_STR endereço</td><td>Imprime string da memória</td><td>PRINT_STR 100</td></tr>
+                </table>
+            </div>
+
+            <div class="help-section">
+                <h3>🔧 Instruções de Sistema</h3>
+                <table class="instruction-table">
+                    <tr><th>Comando</th><th>Sintaxe</th><th>Descrição</th><th>Exemplo</th></tr>
+                    <tr><td>DEBUG</td><td>DEBUG</td><td>Mostra estado atual do processador</td><td>DEBUG</td></tr>
+                    <tr><td>HALT</td><td>HALT</td><td>Para a execução do programa</td><td>HALT</td></tr>
+                </table>
+            </div>
+
+            <div class="help-section">
+                <h3>📝 Sintaxe Geral</h3>
+                <ul style="margin-left: 20px; line-height: 1.6;">
+                    <li><strong>Rótulos:</strong> Use nome seguido de dois pontos (ex: loop:)</li>
+                    <li><strong>Comentários:</strong> Use ponto e vírgula (ex: ; Este é um comentário)</li>
+                    <li><strong>Registradores:</strong> A, B, C, D (não case-sensitive)</li>
+                    <li><strong>Valores:</strong> Decimais (10) ou hexadecimais (0x0A)</li>
+                    <li><strong>Endereços:</strong> Valores diretos ou nomes de rótulos</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+<script>
+        // Versão avançada do simulador de processador 2 de jul
+        class PyProc {
+            constructor(memorySize = 256, debugMode = false) {
+                this.OPCODES = {
+                    0x01: "LOAD_REG", 0x02: "LOAD_MEM", 0x03: "STORE", 0x04: "MOV",
+                    0x10: "ADD", 0x11: "SUB", 0x12: "MUL", 0x13: "DIV",
+                    0x14: "ADDI", 0x15: "SUBI", 0x16: "MULI", 0x17: "DIVI",
+                    0x20: "AND", 0x21: "OR", 0x22: "XOR", 0x23: "NOT",
+                    0x30: "JMP", 0x31: "JZ", 0x32: "JNZ", 0x33: "JGT", 0x34: "JLT",
+                    0x35: "JE", 0x36: "JNE", 0x37: "JGE", 0x38: "JLE",
+                    0x40: "CMP", 0x50: "INPUT", 0x51: "PRINT", 0x52: "PRINT_STR",
+                    0x53: "PRINT_CHAR", 0xFE: "DEBUG", 0xFF: "HALT"
+                };
+
+                this.registers = { A: 0, B: 0, C: 0, D: 0 };
+                this.pc = 0;
+                this.flags = { zero: false, carry: false, negative: false, overflow: false };
+                this.memorySize = memorySize;
+                this.memory = new Array(memorySize).fill(0);
+                this.running = false;
+                this.debugMode = debugMode;
+                this.error = null;
+                this.instructionCount = 0;
+                this.outputBuffer = "";
+                this.stepMode = false;
+                this.waitingForInput = false;
+                this.inputResolve = null;
+            }
+
+            reset() {
+                this.registers = { A: 0, B: 0, C: 0, D: 0 };
+                this.pc = 0;
+                this.flags = { zero: false, carry: false, negative: false, overflow: false };
+                this.running = false;
+                this.error = null;
+                this.instructionCount = 0;
+                this.outputBuffer = "";
+                this.stepMode = false;
+                this.waitingForInput = false;
+                this.inputResolve = null;
+            }
+
+            clearMemory() {
+                this.memory = new Array(this.memorySize).fill(0);
+            }
+
+            loadProgram(program, startAddress = 0) {
+                if (startAddress < 0 || startAddress >= this.memorySize) {
+                    this.error = `Endereço inicial ${startAddress} fora dos limites da memória`;
+                    return false;
+                }
+
+                if (startAddress + program.length > this.memorySize) {
+                    this.error = `Programa muito grande para caber na memória`;
+                    return false;
+                }
+
+                try {
+                    for (let i = 0; i < program.length; i++) {
+                        if (typeof program[i] !== 'number' || program[i] < 0 || program[i] > 255) {
+                            this.error = `Byte inválido em program[${i}]: ${program[i]}`;
+                            return false;
+                        }
+                        this.memory[startAddress + i] = program[i];
+                    }
+                    return true;
+                } catch (e) {
+                    this.error = `Erro ao carregar programa: ${e.message}`;
+                    return false;
+                }
+            }
+
+            fetch() {
+                if (this.pc >= this.memorySize) {
+                    throw new Error(`PC (${this.pc}) fora dos limites da memória`);
+                }
+                const opcode = this.memory[this.pc];
+                this.pc++;
+                return opcode;
+            }
+
+            fetchByte() {
+                if (this.pc >= this.memorySize) {
+                    throw new Error(`PC (${this.pc}) fora dos limites da memória`);
+                }
+                const byte = this.memory[this.pc];
+                this.pc++;
+                return byte;
+            }
+
+            getRegister(regIndex) {
+                if (regIndex < 0 || regIndex > 3) {
+                    throw new Error(`Índice de registrador inválido: ${regIndex}`);
+                }
+                return String.fromCharCode(65 + regIndex);
+            }
+
+            updateFlags(result) {
+                const resultByte = result & 0xFF;
+                this.flags.zero = resultByte === 0;
+                this.flags.negative = (resultByte & 0x80) !== 0;
+                this.flags.carry = result > 0xFF || result < 0;
+                this.flags.overflow = result > 127 || result < -128;
+            }
+
+            async requestInput(prompt = "Digite um valor:") {
+                return new Promise((resolve) => {
+                    this.waitingForInput = true;
+                    this.inputResolve = resolve;
+                    showInputDialog(prompt);
+                });
+            }
+
+            async execute(opcode) {
+                if (!(opcode in this.OPCODES)) {
+                    throw new Error(`Opcode desconhecido: 0x${opcode.toString(16).padStart(2, '0')}`);
+                }
+
+                this.instructionCount++;
+
+                switch (opcode) {
+                    case 0x01: // LOAD_REG
+                        const regIndex1 = this.fetchByte();
+                        const reg1 = this.getRegister(regIndex1);
+                        const value1 = this.fetchByte();
+                        this.registers[reg1] = value1;
+                        break;
+
+                    case 0x02: // LOAD_MEM
+                        const regIndex2 = this.fetchByte();
+                        const reg2 = this.getRegister(regIndex2);
+                        let address2 = this.fetchByte();
+                        
+                        if (address2 < 4) {
+                            const indirectReg = this.getRegister(address2);
+                            address2 = this.registers[indirectReg];
+                        }
+                        
+                        if (address2 < 0 || address2 >= this.memorySize) {
+                            throw new Error(`Acesso à memória inválido: ${address2}`);
+                        }
+                        this.registers[reg2] = this.memory[address2];
+                        break;
+
+                    case 0x03: // STORE
+                        const regIndex3 = this.fetchByte();
+                        const reg3 = this.getRegister(regIndex3);
+                        let address3 = this.fetchByte();
+                        
+                        if (address3 < 4) {
+                            const indirectReg = this.getRegister(address3);
+                            address3 = this.registers[indirectReg];
+                        }
+                        
+                        if (address3 < 0 || address3 >= this.memorySize) {
+                            throw new Error(`Acesso à memória inválido: ${address3}`);
+                        }
+                        this.memory[address3] = this.registers[reg3];
+                        break;
+
+                    case 0x04: // MOV
+                        const destRegIndex = this.fetchByte();
+                        const srcRegIndex = this.fetchByte();
+                        const destReg = this.getRegister(destRegIndex);
+                        const srcReg = this.getRegister(srcRegIndex);
+                        this.registers[destReg] = this.registers[srcReg];
+                        break;
+
+                    case 0x10: // ADD
+                        const reg1Index = this.fetchByte();
+                        const reg2Index = this.fetchByte();
+                        const reg1Name = this.getRegister(reg1Index);
+                        const reg2Name = this.getRegister(reg2Index);
+                        const addResult = this.registers[reg1Name] + this.registers[reg2Name];
+                        this.updateFlags(addResult);
+                        this.registers[reg1Name] = addResult & 0xFF;
+                        break;
+
+                    case 0x11: // SUB
+                        const regSubA = this.fetchByte();
+                        const regSubB = this.fetchByte();
+                        const regSubAName = this.getRegister(regSubA);
+                        const regSubBName = this.getRegister(regSubB);
+                        const subResult = this.registers[regSubAName] - this.registers[regSubBName];
+                        this.updateFlags(subResult);
+                        this.registers[regSubAName] = subResult & 0xFF;
+                        break;
+
+                    case 0x12: // MUL
+                        const regMulA = this.fetchByte();
+                        const regMulB = this.fetchByte();
+                        const regMulAName = this.getRegister(regMulA);
+                        const regMulBName = this.getRegister(regMulB);
+                        const mulResult = this.registers[regMulAName] * this.registers[regMulBName];
+                        this.updateFlags(mulResult);
+                        this.registers[regMulAName] = mulResult & 0xFF;
+                        break;
+
+                    case 0x13: // DIV
+                        const regDivA = this.fetchByte();
+                        const regDivB = this.fetchByte();
+                        const regDivAName = this.getRegister(regDivA);
+                        const regDivBName = this.getRegister(regDivB);
+                        if (this.registers[regDivBName] === 0) {
+                            throw new Error("Divisão por zero");
+                        }
+                        const divResult = Math.floor(this.registers[regDivAName] / this.registers[regDivBName]);
+                        this.updateFlags(divResult);
+                        this.registers[regDivAName] = divResult & 0xFF;
+                        break;
+
+                    case 0x14: // ADDI
+                        const regAddiA = this.fetchByte();
+                        const regAddiAName = this.getRegister(regAddiA);
+                        const immediate = this.fetchByte();
+                        const addiResult = this.registers[regAddiAName] + immediate;
+                        this.updateFlags(addiResult);
+                        this.registers[regAddiAName] = addiResult & 0xFF;
+                        break;
+
+                    case 0x15: // SUBI
+                        const regSubiA = this.fetchByte();
+                        const regSubiAName = this.getRegister(regSubiA);
+                        const subImm = this.fetchByte();
+                        const subiResult = this.registers[regSubiAName] - subImm;
+                        this.updateFlags(subiResult);
+                        this.registers[regSubiAName] = subiResult & 0xFF;
+                        break;
+
+                    case 0x16: // MULI
+                        const regMuliA = this.fetchByte();
+                        const regMuliAName = this.getRegister(regMuliA);
+                        const mulImm = this.fetchByte();
+                        const muliResult = this.registers[regMuliAName] * mulImm;
+                        this.updateFlags(muliResult);
+                        this.registers[regMuliAName] = muliResult & 0xFF;
+                        break;
+
+                    case 0x17: // DIVI
+                        const regDiviA = this.fetchByte();
+                        const regDiviAName = this.getRegister(regDiviA);
+                        const divImm = this.fetchByte();
+                        if (divImm === 0) {
+                            throw new Error("Divisão por zero");
+                        }
+                        const diviResult = Math.floor(this.registers[regDiviAName] / divImm);
+                        this.updateFlags(diviResult);
+                        this.registers[regDiviAName] = diviResult & 0xFF;
+                        break;
+
+                    case 0x20: // AND
+                        const regAnd1 = this.fetchByte();
+                        const regAnd2 = this.fetchByte();
+                        const regAnd1Name = this.getRegister(regAnd1);
+                        const regAnd2Name = this.getRegister(regAnd2);
+                        const andResult = this.registers[regAnd1Name] & this.registers[regAnd2Name];
+                        this.updateFlags(andResult);
+                        this.registers['A'] = andResult;
+                        break;
+
+                    case 0x21: // OR
+                        const regOr1 = this.fetchByte();
+                        const regOr2 = this.fetchByte();
+                        const regOr1Name = this.getRegister(regOr1);
+                        const regOr2Name = this.getRegister(regOr2);
+                        const orResult = this.registers[regOr1Name] | this.registers[regOr2Name];
+                        this.updateFlags(orResult);
+                        this.registers['A'] = orResult;
+                        break;
+
+                    case 0x22: // XOR
+                        const regXor1 = this.fetchByte();
+                        const regXor2 = this.fetchByte();
+                        const regXor1Name = this.getRegister(regXor1);
+                        const regXor2Name = this.getRegister(regXor2);
+                        const xorResult = this.registers[regXor1Name] ^ this.registers[regXor2Name];
+                        this.updateFlags(xorResult);
+                        this.registers['A'] = xorResult;
+                        break;
+
+                    case 0x23: // NOT
+                        const regNot = this.fetchByte();
+                        const regNotName = this.getRegister(regNot);
+                        const notResult = (~this.registers[regNotName]) & 0xFF;
+                        this.updateFlags(notResult);
+                        this.registers['A'] = notResult;
+                        break;
+
+                    case 0x30: // JMP
+                        const jumpAddr = this.fetchByte();
+                        if (jumpAddr < 0 || jumpAddr >= this.memorySize) {
+                            throw new Error(`Endereço de salto inválido: ${jumpAddr}`);
+                        }
+                        this.pc = jumpAddr;
+                        break;
+
+                    case 0x31: case 0x35: // JZ/JE
+                        const jzAddr = this.fetchByte();
+                        if (this.flags.zero) {
+                            if (jzAddr < 0 || jzAddr >= this.memorySize) {
+                                throw new Error(`Endereço de salto inválido: ${jzAddr}`);
+                            }
+                            this.pc = jzAddr;
+                        }
+                        break;
+
+                    case 0x32: case 0x36: // JNZ/JNE
+                        const jnzAddr = this.fetchByte();
+                        if (!this.flags.zero) {
+                            if (jnzAddr < 0 || jnzAddr >= this.memorySize) {
+                                throw new Error(`Endereço de salto inválido: ${jnzAddr}`);
+                            }
+                            this.pc = jnzAddr;
+                        }
+                        break;
+
+                    case 0x33: // JGT
+                        const jgtAddr = this.fetchByte();
+                        if (!this.flags.zero && !this.flags.negative) {
+                            if (jgtAddr < 0 || jgtAddr >= this.memorySize) {
+                                throw new Error(`Endereço de salto inválido: ${jgtAddr}`);
+                            }
+                            this.pc = jgtAddr;
+                        }
+                        break;
+
+                    case 0x34: // JLT
+                        const jltAddr = this.fetchByte();
+                        if (this.flags.negative) {
+                            if (jltAddr < 0 || jltAddr >= this.memorySize) {
+                                throw new Error(`Endereço de salto inválido: ${jltAddr}`);
+                            }
+                            this.pc = jltAddr;
+                        }
+                        break;
+
+                    case 0x37: // JGE
+                        const jgeAddr = this.fetchByte();
+                        if (!this.flags.negative) {
+                            if (jgeAddr < 0 || jgeAddr >= this.memorySize) {
+                                throw new Error(`Endereço de salto inválido: ${jgeAddr}`);
+                            }
+                            this.pc = jgeAddr;
+                        }
+                        break;
+
+                    case 0x38: // JLE
+                        const jleAddr = this.fetchByte();
+                        if (this.flags.zero || this.flags.negative) {
+                            if (jleAddr < 0 || jleAddr >= this.memorySize) {
+                                throw new Error(`Endereço de salto inválido: ${jleAddr}`);
+                            }
+                            this.pc = jleAddr;
+                        }
+                        break;
+
+                    case 0x40: // CMP
+                        const cmpReg1 = this.fetchByte();
+                        const cmpReg2 = this.fetchByte();
+                        const cmpReg1Name = this.getRegister(cmpReg1);
+                        const cmpReg2Name = this.getRegister(cmpReg2);
+                        const cmpResult = this.registers[cmpReg1Name] - this.registers[cmpReg2Name];
+                        this.updateFlags(cmpResult);
+                        break;
+
+                    case 0x50: // INPUT
+                        const inputReg = this.fetchByte();
+                        const inputRegName = this.getRegister(inputReg);
+                        const inputValue = await this.requestInput("Digite um valor (número ou caractere):");
+                        
+                        let value;
+                        // Se for string "0", converter para 0 numérico
+                        if (inputValue === "0") {
+                            value = 0;
+                        } else if (inputValue.length === 1 && !inputValue.match(/^\d+$/)) {
+                            // Se for um único caractere não numérico, usar ASCII
+                            value = inputValue.charCodeAt(0);
+                        } else {
+                            // Tentar converter para número
+                            value = parseInt(inputValue);
+                            if (isNaN(value)) {
+                                throw new Error("Entrada inválida");
+                            }
+                        }
+                        this.registers[inputRegName] = value & 0xFF;
+                        break;
+
+                    case 0x51: // PRINT
+                        const printReg = this.fetchByte();
+                        const printRegName = this.getRegister(printReg);
+                        const printValue = this.registers[printRegName];
+                        this.addOutput(`Valor do registrador ${printRegName}: ${printValue}`);
+                        break;
+
+                    case 0x52: // PRINT_STR
+                        let strAddr = this.fetchByte();
+                        
+                        if (strAddr < 4) {
+                            const indirectReg = this.getRegister(strAddr);
+                            strAddr = this.registers[indirectReg];
+                        }
+                        
+                        try {
+                            const str = this.readString(strAddr);
+                            this.addOutput(str);
+                        } catch (e) {
+                            throw new Error(`Erro ao ler string da memória: ${e.message}`);
+                        }
+                        break;
+
+                    case 0x53: // PRINT_CHAR
+                        const charReg = this.fetchByte();
+                        const charRegName = this.getRegister(charReg);
+                        const charCode = this.registers[charRegName];
+                        const char = String.fromCharCode(charCode);
+                        this.outputBuffer += char;
+                        // Mostrar o caractere imediatamente na saída
+                        this.addOutput(char);
+                        break;
+
+                    case 0xFE: // DEBUG
+                        this.addOutput(this.debugState());
+                        this.addOutput(`Flags: ${JSON.stringify(this.flags)}`);
+                        break;
+
+                    case 0xFF: // HALT
+                        this.running = false;
+                        // Se há buffer de caracteres acumulados, mostrar no final
+                        if (this.outputBuffer.trim()) {
+                            this.addOutput(`\nSaída final: ${this.outputBuffer}`);
+                        }
+                        break;
+                }
+            }
+
+            readString(address) {
+                if (address < 0 || address >= this.memorySize) {
+                    throw new Error(`Endereço inicial ${address} fora dos limites da memória`);
+                }
+
+                let string = "";
+                let i = 0;
+                while (address + i < this.memorySize) {
+                    const byte = this.memory[address + i];
+                    if (byte === 0) break;
+                    string += String.fromCharCode(byte);
+                    i++;
+                }
+                return string;
+            }
+
+            debugState() {
+                return `PC: 0x${this.pc.toString(16).padStart(2, '0')} | ` +
+                       `Registradores: A=0x${this.registers.A.toString(16).padStart(2, '0')}, ` +
+                       `B=0x${this.registers.B.toString(16).padStart(2, '0')}, ` +
+                       `C=0x${this.registers.C.toString(16).padStart(2, '0')}, ` +
+                       `D=0x${this.registers.D.toString(16).padStart(2, '0')}`;
+            }
+
+            addOutput(text) {
+                const outputArea = document.getElementById('outputArea');
+                // Se for um caractere unico, adicionar sem quebra de linha
+                if (text.length === 1 && text.match(/[a-zA-Z0-9\s]/)) {
+                    outputArea.innerHTML += text;
+                } else {
+                    outputArea.innerHTML += text + '\n';
+                }
+                outputArea.scrollTop = outputArea.scrollHeight;
+            }
+
+            async run(maxInstructions = 1000) {
+                this.running = true;
+                this.instructionCount = 0;
+                this.outputBuffer = "";
+                let lastPC = -1;
+                let samePC_count = 0;
+
+                try {
+                    while (this.running && this.pc < this.memorySize && this.instructionCount < maxInstructions) {
+                        if (this.stepMode) {
+                            return true; // Parar para aguardar próximo step
+                        }
+                        
+                        // Detectar possível loop infinito
+                        if (this.pc === lastPC) {
+                            samePC_count++;
+                            if (samePC_count > 50) {
+                                this.error = `Possível loop infinito detectado no PC=${this.pc}. Use RESET para parar.`;
+                                this.running = false;
+                                return false;
+                            }
+                        } else {
+                            samePC_count = 0;
+                            lastPC = this.pc;
+                        }
+                        
+                        const opcode = this.fetch();
+                        await this.execute(opcode);
+                        updateUI();
+                        
+                        // Pequena pausa para permitir visualização
+                        if (!this.stepMode) {
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                        }
+                    }
+
+                    if (this.instructionCount >= maxInstructions && this.running) {
+                        this.error = `Limite de instruções atingido (${maxInstructions})`;
+                        return false;
+                    }
+
+                    return true;
+                } catch (e) {
+                    this.error = `Erro durante a execução em PC=${this.pc - 1}: ${e.message}`;
+                    this.running = false;
+                    return false;
+                }
+            }
+
+            async step() {
+                if (!this.running || this.pc >= this.memorySize) {
+                    return false;
+                }
+
+                try {
+                    const opcode = this.fetch();
+                    await this.execute(opcode);
+                    updateUI();
+                    
+                    if (!this.running) {
+                        return false; // HALT foi executado
+                    }
+                    
+                    return true;
+                } catch (e) {
+                    this.error = `Erro durante a execução em PC=${this.pc - 1}: ${e.message}`;
+                    this.running = false;
+                    return false;
+                }
+            }
+        }
+
+        // Implementação do Assembler
+        class Assembler {
+            constructor(processor) {
+                this.processor = processor;
+                this.opcodes = {};
+                for (const [code, name] of Object.entries(processor.OPCODES)) {
+                    this.opcodes[name] = parseInt(code);
+                }
+                this.labels = {};
+                this.errors = [];
+            }
+
+            parseRegister(regStr) {
+                if (!['A', 'B', 'C', 'D'].includes(regStr)) {
+                    throw new Error(`Registrador inválido: ${regStr}`);
+                }
+                return regStr.charCodeAt(0) - 'A'.charCodeAt(0);
+            }
+
+            isRegister(valueStr) {
+                return ['A', 'B', 'C', 'D'].includes(valueStr);
+            }
+
+            parseValueOrRegister(valueStr, allowRegister = false) {
+                // Remover espaços e verificar se não está vazio
+                valueStr = valueStr.trim();
+                if (!valueStr) {
+                    throw new Error("Valor vazio não é permitido");
+                }
+
+                // Verificar se é um registrador
+                if (this.isRegister(valueStr)) {
+                    if (allowRegister) {
+                        return [this.parseRegister(valueStr), true];
+                    } else {
+                        throw new Error(`Registrador não permitido aqui: ${valueStr}`);
+                    }
+                }
+
+                // Não é um registrador, tentar converter para valor
+                try {
+                    if (valueStr.startsWith('0x')) {
+                        return [parseInt(valueStr, 16) & 0xFF, false];
+                    } else if (valueStr.match(/^-?\d+$/)) {
+                        return [parseInt(valueStr) & 0xFF, false];
+                    } else if (valueStr in this.labels) {
+                        return [this.labels[valueStr], false];
+                    } else {
+                        throw new Error(`Valor ou rótulo não reconhecido: ${valueStr}`);
+                    }
+                } catch (e) {
+                    throw new Error(`Erro ao converter valor '${valueStr}': ${e.message}`);
+                }
+            }
+
+            firstPass(code) {
+                this.labels = {};
+                let address = 0;
+                const lines = code.trim().split('\n');
+
+                for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+                    let line = lines[lineNum];
+                    
+                    if (line.includes(';')) {
+                        line = line.substring(0, line.indexOf(';'));
+                    }
+
+                    line = line.trim();
+                    if (!line) continue;
+
+                    if (line.includes(':')) {
+                        const [label, rest] = line.split(':', 2);
+                        const labelName = label.trim();
+                        if (labelName in this.labels) {
+                            this.errors.push(`Linha ${lineNum + 1}: Rótulo '${labelName}' redefinido`);
+                        } else {
+                            this.labels[labelName] = address;
+                        }
+
+                        line = rest.trim();
+                        if (!line) continue;
+                    }
+
+                    const parts = line.split(/\s+/);
+                    const instruction = parts[0].toUpperCase();
+                    
+                    if (!(instruction in this.opcodes)) {
+                        this.errors.push(`Linha ${lineNum + 1}: Instrução desconhecida: ${instruction}`);
+                        continue;
+                    }
+
+                    address += 1; // opcode
+
+                    if (parts.length > 1) {
+                        // Juntar operandos e separar por vírgula
+                        const operandsPart = parts.slice(1).join(' ').trim();
+                        const operands = operandsPart ? operandsPart.split(',').map(op => op.trim()).filter(op => op) : [];
+
+                        // Casos especiais para instruções com imediatos
+                        if (instruction === "ADD" && operands.length === 2 && !this.isRegister(operands[1])) {
+                            address += 2; // ADDI
+                            continue;
+                        }
+                        if (instruction === "SUB" && operands.length === 2 && !this.isRegister(operands[1])) {
+                            address += 2; // SUBI
+                            continue;
+                        }
+                        if (instruction === "MUL" && operands.length === 2 && !this.isRegister(operands[1])) {
+                            address += 2; // MULI
+                            continue;
+                        }
+                        if (instruction === "DIV" && operands.length === 2 && !this.isRegister(operands[1])) {
+                            address += 2; // DIVI
+                            continue;
+                        }
+
+                        // Contar operandos normalmente
+                        if (["LOAD_REG", "LOAD_MEM", "STORE"].includes(instruction)) {
+                            address += 2;
+                        } else if (["ADD", "SUB", "MUL", "DIV", "AND", "OR", "XOR", "CMP", "MOV"].includes(instruction)) {
+                            address += 2;
+                        } else if (["NOT", "PRINT", "PRINT_CHAR", "INPUT"].includes(instruction)) {
+                            address += 1;
+                        } else if (["JMP", "JZ", "JNZ", "JGT", "JLT", "JE", "JNE", "JGE", "JLE", "PRINT_STR"].includes(instruction)) {
+                            address += 1;
+                        }
+                    } else if (!["HALT", "DEBUG"].includes(instruction)) {
+                        this.errors.push(`Linha ${lineNum + 1}: Faltam operandos para a instrução: ${instruction}`);
+                    }
+                }
+            }
+
+            assemble(code) {
+                this.errors = [];
+                const program = [];
+                const machineCode = [];
+
+                this.firstPass(code);
+                if (this.errors.length > 0) {
+                    return [[], this.errors, []];
+                }
+
+                const lines = code.trim().split('\n');
+                let currentAddress = 0;
+
+                for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+                    let line = lines[lineNum];
+                    
+                    if (line.includes(';')) {
+                        line = line.substring(0, line.indexOf(';'));
+                    }
+
+                    line = line.trim();
+                    if (!line) continue;
+
+                    let originalLine = line;
+                    if (line.includes(':')) {
+                        const [_, rest] = line.split(':', 2);
+                        line = rest.trim();
+                        if (!line) continue;
+                    }
+
+                    // Separar instrução dos operandos de forma mais robusta
+                    const parts = line.split(/\s+/);
+                    const instruction = parts[0].toUpperCase();
+                    
+                    if (!(instruction in this.opcodes)) {
+                        continue; // Já reportado no primeiro passo
+                    }
+
+                    // Juntar todos os operandos e depois separar por vírgula
+                    const operandsPart = parts.slice(1).join(' ').trim();
+                    const operands = operandsPart ? operandsPart.split(',').map(op => op.trim()).filter(op => op) : [];
+
+                    let machineCodeLine = `${currentAddress.toString(16).padStart(4, '0')}: `;
+                    let instructionBytes = [];
+
+                    try {
+                        // Casos especiais para instruções com imediatos
+                        if (instruction === "ADD" && operands.length === 2 && !this.isRegister(operands[1])) {
+                            const reg = this.parseRegister(operands[0]);
+                            const [value] = this.parseValueOrRegister(operands[1], false);
+                            instructionBytes = [this.opcodes["ADDI"], reg, value];
+                            program.push(...instructionBytes);
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine} -> ADDI ${operands[0]}, ${value}`;
+                            machineCode.push(machineCodeLine);
+                            currentAddress += 3;
+                            continue;
+                        }
+                        if (instruction === "SUB" && operands.length === 2 && !this.isRegister(operands[1])) {
+                            const reg = this.parseRegister(operands[0]);
+                            const [value] = this.parseValueOrRegister(operands[1], false);
+                            instructionBytes = [this.opcodes["SUBI"], reg, value];
+                            program.push(...instructionBytes);
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine} -> SUBI ${operands[0]}, ${value}`;
+                            machineCode.push(machineCodeLine);
+                            currentAddress += 3;
+                            continue;
+                        }
+                        if (instruction === "MUL" && operands.length === 2 && !this.isRegister(operands[1])) {
+                            const reg = this.parseRegister(operands[0]);
+                            const [value] = this.parseValueOrRegister(operands[1], false);
+                            instructionBytes = [this.opcodes["MULI"], reg, value];
+                            program.push(...instructionBytes);
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine} -> MULI ${operands[0]}, ${value}`;
+                            machineCode.push(machineCodeLine);
+                            currentAddress += 3;
+                            continue;
+                        }
+                        if (instruction === "DIV" && operands.length === 2 && !this.isRegister(operands[1])) {
+                            const reg = this.parseRegister(operands[0]);
+                            const [value] = this.parseValueOrRegister(operands[1], false);
+                            instructionBytes = [this.opcodes["DIVI"], reg, value];
+                            program.push(...instructionBytes);
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine} -> DIVI ${operands[0]}, ${value}`;
+                            machineCode.push(machineCodeLine);
+                            currentAddress += 3;
+                            continue;
+                        }
+
+                        instructionBytes.push(this.opcodes[instruction]);
+
+                        if (instruction === "LOAD_REG") {
+                            if (operands.length !== 2) {
+                                this.errors.push(`Linha ${lineNum + 1}: Sintaxe incorreta para LOAD_REG. Use: LOAD_REG reg, valor`);
+                                continue;
+                            }
+                            const reg = this.parseRegister(operands[0]);
+                            const [value, isReg] = this.parseValueOrRegister(operands[1], true);
+                            
+                            if (isReg) {
+                                instructionBytes[0] = this.opcodes["MOV"];
+                                machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                                machineCodeLine += ` ; ${originalLine} -> MOV ${operands[0]}, ${operands[1]}`;
+                            } else {
+                                machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                                machineCodeLine += ` ; ${originalLine}`;
+                            }
+                            instructionBytes.push(reg, value);
+
+                        } else if (["LOAD_MEM", "STORE"].includes(instruction)) {
+                            if (operands.length !== 2) {
+                                this.errors.push(`Linha ${lineNum + 1}: Sintaxe incorreta para ${instruction}. Use: ${instruction} reg, endereço`);
+                                continue;
+                            }
+                            const reg = this.parseRegister(operands[0]);
+                            const [address] = this.parseValueOrRegister(operands[1], true);
+                            instructionBytes.push(reg, address);
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine}`;
+
+                        } else if (["ADD", "SUB", "MUL", "DIV", "AND", "OR", "XOR", "CMP", "MOV"].includes(instruction)) {
+                            if (operands.length !== 2) {
+                                this.errors.push(`Linha ${lineNum + 1}: Sintaxe incorreta para ${instruction}. Use: ${instruction} reg1, reg2`);
+                                continue;
+                            }
+                            const reg1 = this.parseRegister(operands[0]);
+                            const reg2 = this.parseRegister(operands[1]);
+                            instructionBytes.push(reg1, reg2);
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine}`;
+
+                        } else if (["NOT", "PRINT", "PRINT_CHAR", "INPUT"].includes(instruction)) {
+                            if (operands.length !== 1) {
+                                this.errors.push(`Linha ${lineNum + 1}: Sintaxe incorreta para ${instruction}. Use: ${instruction} reg`);
+                                continue;
+                            }
+                            const reg = this.parseRegister(operands[0]);
+                            instructionBytes.push(reg);
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine}`;
+
+                        } else if (["JMP", "JZ", "JNZ", "JGT", "JLT", "JE", "JNE", "JGE", "JLE", "PRINT_STR"].includes(instruction)) {
+                            if (operands.length !== 1) {
+                                this.errors.push(`Linha ${lineNum + 1}: Sintaxe incorreta para ${instruction}. Use: ${instruction} endereço/rótulo`);
+                                continue;
+                            }
+                            const target = operands[0];
+                            let address;
+                            if (target in this.labels) {
+                                address = this.labels[target];
+                            } else {
+                                [address] = this.parseValueOrRegister(target, false);
+                            }
+                            instructionBytes.push(address);
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine}`;
+
+                        } else if (["HALT", "DEBUG"].includes(instruction)) {
+                            machineCodeLine += instructionBytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                            machineCodeLine += ` ; ${originalLine}`;
+                        }
+
+                        program.push(...instructionBytes);
+                        machineCode.push(machineCodeLine);
+                        currentAddress += instructionBytes.length;
+
+                    } catch (e) {
+                        this.errors.push(`Linha ${lineNum + 1}: ${e.message}`);
+                    }
+                }
+
+                return [program, this.errors, machineCode];
+            }
+        }
+
+        // Variáveis globais
+        let processor = new PyProc(256, false);
+        let assembler = new Assembler(processor);
+
+        // Exemplos de código
+        const examples = {
+            input_print: `; Exemplo 1: Solicitar um número e imprimir na tela
+INPUT A       ; Solicita um número ao usuário e armazena em A
+PRINT A       ; Imprime o valor de A
+HALT          ; Encerra o programa`,
+
+            input_double: `; Exemplo 2: Solicitar um número e imprimir o dobro na tela
+INPUT A       ; Solicita um número ao usuário e armazena em A
+ADD A, A      ; Adiciona A a si mesmo (dobra o valor)
+PRINT A       ; Imprime o valor de A (dobrado)
+HALT          ; Encerra o programa`,
+
+            three_max: `; Exemplo 3: Solicitar três números e imprimir o maior na tela
+INPUT A       ; Solicita o primeiro número
+INPUT B       ; Solicita o segundo número
+INPUT C       ; Solicita o terceiro número
+
+; Compara A e B
+CMP A, B      ; Compara A com B
+JGE a_ge_b    ; Se A >= B, pula para a_ge_b
+MOV A, B      ; Senão, A = B (B é maior que A)
+
+a_ge_b:
+; Agora A tem o maior valor entre A e B original
+; Compara A e C
+CMP A, C      ; Compara A com C
+JGE a_ge_c    ; Se A >= C, pula para a_ge_c
+MOV A, C      ; Senão, A = C (C é maior que A)
+
+a_ge_c:
+; Agora A tem o maior valor entre os três
+PRINT A       ; Imprime o maior valor
+HALT          ; Encerra o programa`,
+
+            ten_max: `; Exemplo 4: Solicitar dez números e imprimir o maior na tela
+LOAD_REG A, 0     ; Inicializa A com 0 (maior valor até agora)
+LOAD_REG B, 0     ; Inicializa B como contador
+LOAD_REG C, 10    ; Inicializa C com 10 (número de iterações)
+
+loop:
+CMP B, C          ; Compara contador (B) com limite (C)
+JGE end_loop      ; Se B >= C, sai do loop
+
+INPUT D           ; Solicita um número e armazena em D
+
+CMP D, A          ; Compara D com o maior valor atual (A)
+JLE not_greater   ; Se D <= A, não é maior
+MOV A, D          ; Se D > A, atualiza A com D
+
+not_greater:
+ADD B, 1          ; Incrementa o contador
+JMP loop          ; Volta ao início do loop
+
+end_loop:
+PRINT A           ; Imprime o maior valor
+HALT              ; Encerra o programa`,
+
+            input_until_zero: `; Exemplo 5: Solicitar números até o usuário digitar 0, imprimir o maior
+LOAD_REG A, 0     ; Inicializa A com 0 (maior valor até agora)
+LOAD_REG D, 0     ; Registrador auxiliar para comparação com zero
+
+loop:
+INPUT B           ; Solicita um número e armazena em B
+
+CMP B, D          ; Compara B com 0
+JE end_loop       ; Se B = 0, sai do loop
+
+CMP B, A          ; Compara B com o maior valor atual (A)
+JLE not_greater   ; Se B <= A, não é maior
+MOV A, B          ; Se B > A, atualiza A com B
+
+not_greater:
+JMP loop          ; Volta ao início do loop
+
+end_loop:
+PRINT A           ; Imprime o maior valor
+HALT              ; Encerra o programa`,
+
+            factorial: `; Exemplo 6: Solicitar um número e imprimir o seu fatorial
+INPUT A           ; Solicita um número e armazena em A
+
+LOAD_REG B, 1     ; Inicializa B com 1 (acumulador)
+LOAD_REG C, 1     ; Inicializa C com 1 (contador)
+
+mul_loop:
+MUL B, C          ; B = B * C
+ADD C, 1          ; C = C + 1 (será ADDI pelo montador)
+CMP C, A          ; Compara C com A
+JLE mul_loop      ; Se C <= A, repete o laço
+
+PRINT B           ; Imprime o fatorial
+HALT              ; Encerra o programa`,
+
+            reverse_name: `; Exemplo 7: Solicitar um nome e imprimir ao contrário
+LOAD_REG A, 0     ; Contador de caracteres
+LOAD_REG B, 80    ; Endereço base para armazenamento
+LOAD_REG D, 0     ; Valor 0 para comparação (quando usuário digita "0")
+
+; Leitura de caracteres até o usuário digitar 0
+read_loop:
+INPUT C           ; Lê um valor (se digitar "0" vira 0, se digitar letra vira ASCII)
+CMP C, D          ; Compara C com 0
+JE end_read       ; Se C = 0, encerra a leitura
+
+STORE C, B        ; Armazena o caractere na memória
+ADD B, 1          ; Incrementa o endereço
+ADD A, 1          ; Incrementa o contador
+JMP read_loop     ; Continua a leitura
+
+end_read:
+; Verificar se há pelo menos um caractere
+CMP A, D          ; Verifica se há pelo menos um caractere
+JE end_print      ; Se não há caracteres, sai
+
+SUB B, 1          ; Decrementa B para apontar para o último caractere
+
+; Imprime os caracteres em ordem reversa
+print_loop:
+LOAD_MEM C, B     ; Lê o caractere da memória
+PRINT_CHAR C      ; Imprime o caractere
+
+SUB B, 1          ; Decrementa o endereço
+SUB A, 1          ; Decrementa o contador
+JNZ print_loop    ; Continua até A = 0
+
+end_print:
+HALT              ; Encerra o programa`
+        };
+
+        // Funções de UI
+        function updateUI() {
+            // Atualizar registradores
+            updateRegisters();
+            
+            // Atualizar flags
+            updateFlags();
+            
+            // Atualizar memória
+            updateMemory();
+            
+            // Atualizar PC
+            document.getElementById('pcValue').textContent = `0x${processor.pc.toString(16).padStart(2, '0')}`;
+        }
+
+        function updateRegisters() {
+            const registers = ['A', 'B', 'C', 'D'];
+            
+            registers.forEach(reg => {
+                const element = document.getElementById(`reg${reg}`);
+                const valueElement = element.querySelector('.register-value');
+                const oldValue = valueElement.textContent;
+                
+                const newValue = `0x${processor.registers[reg].toString(16).padStart(2, '0')}`;
+                valueElement.textContent = newValue;
+                
+                // Destacar se mudou
+                if (oldValue !== newValue && oldValue !== '0x00') {
+                    element.classList.add('highlight');
+                    setTimeout(() => element.classList.remove('highlight'), 1500);
+                }
+            });
+        }
+
+        function updateFlags() {
+            const flags = [
+                { id: 'flagZero', flag: 'zero' },
+                { id: 'flagCarry', flag: 'carry' },
+                { id: 'flagNegative', flag: 'negative' },
+                { id: 'flagOverflow', flag: 'overflow' }
+            ];
+
+            flags.forEach(({ id, flag }) => {
+                const element = document.getElementById(id);
+                if (processor.flags[flag]) {
+                    element.classList.add('active');
+                } else {
+                    element.classList.remove('active');
+                }
+            });
+        }
+
+        function updateMemory() {
+            const memoryDisplay = document.getElementById('memoryDisplay');
+            memoryDisplay.innerHTML = '';
+
+            // Mostrar apenas primeiros 256 bytes em blocos de 16
+            for (let addr = 0; addr < Math.min(256, processor.memorySize); addr += 16) {
+                const row = document.createElement('div');
+                row.className = 'memory-row';
+                
+                let rowText = `${addr.toString(16).padStart(4, '0')}: `;
+                let hasData = false;
+                
+                // Verificar se há dados não-zero nesta linha
+                for (let i = 0; i < 16 && (addr + i) < processor.memorySize; i++) {
+                    if (processor.memory[addr + i] !== 0) {
+                        hasData = true;
+                        break;
+                    }
+                }
+                
+                // Sempre mostrar as primeiras linhas (onde está o programa) ou linhas com dados
+                if (addr < 64 || hasData) {
+                    for (let i = 0; i < 16 && (addr + i) < processor.memorySize; i++) {
+                        const value = processor.memory[addr + i];
+                        rowText += `${value.toString(16).padStart(2, '0')} `;
+                        
+                        // Destacar posição atual do PC
+                        if (addr + i === processor.pc && processor.running) {
+                            row.classList.add('highlight');
+                        }
+                    }
+                    
+                    // Adicionar representação ASCII
+                    rowText += ' | ';
+                    for (let i = 0; i < 16 && (addr + i) < processor.memorySize; i++) {
+                        const value = processor.memory[addr + i];
+                        rowText += (value >= 32 && value <= 126) ? String.fromCharCode(value) : '.';
+                    }
+                    
+                    row.textContent = rowText;
+                    memoryDisplay.appendChild(row);
+                }
+            }
+        }
+
+        function updateMachineCode(machineCode) {
+            const display = document.getElementById('machineCodeDisplay');
+            display.innerHTML = '';
+            
+            if (machineCode.length === 0) {
+                display.innerHTML = '<span style="color: var(--text-secondary);">Nenhum código montado ainda...</span>';
+                return;
+            }
+            
+            machineCode.forEach(line => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '2px';
+                div.style.fontFamily = 'monospace';
+                div.style.fontSize = '11px';
+                div.textContent = line;
+                display.appendChild(div);
+            });
+        }
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${isError ? 'error' : 'success'}`;
+        }
+
+        function showInputDialog(prompt) {
+            const modal = document.getElementById('inputModal');
+            const promptElement = document.getElementById('inputPrompt');
+            const inputField = document.getElementById('inputField');
+            
+            promptElement.textContent = prompt;
+            inputField.value = '';
+            modal.style.display = 'flex';
+            inputField.focus();
+        }
+
+        function hideInputDialog() {
+            document.getElementById('inputModal').style.display = 'none';
+        }
+
+        function showHelpDialog() {
+            document.getElementById('helpModal').style.display = 'flex';
+        }
+
+        function hideHelpDialog() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '☀️';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = '🌙';
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeEditor = document.getElementById('codeEditor');
+            const assembleBtn = document.getElementById('assembleBtn');
+            const runBtn = document.getElementById('runBtn');
+            const stepBtn = document.getElementById('stepBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const loadBtn = document.getElementById('loadBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const inputOkBtn = document.getElementById('inputOkBtn');
+            const inputCancelBtn = document.getElementById('inputCancelBtn');
+            const inputField = document.getElementById('inputField');
+            const themeToggle = document.getElementById('themeToggle');
+            const helpBtn = document.getElementById('helpBtn');
+            const closeHelpBtn = document.getElementById('closeHelpBtn');
+
+            // Toggle de tema
+            themeToggle.addEventListener('click', toggleTheme);
+
+            // Botão de ajuda
+            helpBtn.addEventListener('click', showHelpDialog);
+            closeHelpBtn.addEventListener('click', hideHelpDialog);
+
+            // Fechar modal de ajuda clicando fora
+            document.getElementById('helpModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideHelpDialog();
+                }
+            });
+
+            // Botões de exemplo
+            document.querySelectorAll('.example-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const example = this.getAttribute('data-example');
+                    codeEditor.value = examples[example];
+                    showStatus('Exemplo carregado no editor');
+                });
+            });
+
+            // Montar código
+            assembleBtn.addEventListener('click', function() {
+                const code = codeEditor.value;
+                if (!code.trim()) {
+                    showStatus('Por favor, digite algum código assembly', true);
+                    return;
+                }
+
+                processor.reset();
+                processor.clearMemory();
+                
+                const [program, errors, machineCode] = assembler.assemble(code);
+                
+                if (errors.length > 0) {
+                    showStatus(`Erros de montagem: ${errors.join('; ')}`, true);
+                    runBtn.disabled = true;
+                    stepBtn.disabled = true;
+                    updateMachineCode([]);
+                    return;
+                }
+
+                const success = processor.loadProgram(program);
+                if (!success) {
+                    showStatus(`Erro ao carregar programa: ${processor.error}`, true);
+                    runBtn.disabled = true;
+                    stepBtn.disabled = true;
+                    updateMachineCode([]);
+                    return;
+                }
+
+                showStatus(`Programa montado com sucesso! ${program.length} bytes carregados.`);
+                runBtn.disabled = false;
+                stepBtn.disabled = false;
+                updateMachineCode(machineCode);
+                updateUI();
+            });
+
+            // Executar programa
+            runBtn.addEventListener('click', async function() {
+                if (!processor.running) {
+                    // Iniciar execução
+                    processor.running = true;
+                    processor.stepMode = false;
+                    runBtn.textContent = '⏸️ Pausar';
+                    stepBtn.disabled = true;
+                    assembleBtn.disabled = true;
+                    
+                    document.getElementById('outputArea').innerHTML = '';
+                    showStatus('Executando programa...');
+                    
+                    try {
+                        const success = await processor.run();
+                        
+                        if (success) {
+                            if (processor.running) {
+                                showStatus('Programa pausado');
+                            } else {
+                                showStatus('Programa executado com sucesso!');
+                                runBtn.disabled = true;
+                                stepBtn.disabled = true;
+                            }
+                        } else {
+                            showStatus(`Erro na execução: ${processor.error}`, true);
+                        }
+                    } catch (error) {
+                        showStatus(`Erro na execução: ${error.message}`, true);
+                        processor.running = false;
+                    }
+                    
+                    runBtn.textContent = '▶️ Executar';
+                    stepBtn.disabled = !processor.running;
+                    assembleBtn.disabled = false;
+                    updateUI();
+                    
+                } else {
+                    // Pausar execução
+                    processor.stepMode = true;
+                    runBtn.textContent = '▶️ Continuar';
+                    stepBtn.disabled = false;
+                    showStatus('Programa pausado');
+                }
+            });
+
+            // Executar passo a passo
+            stepBtn.addEventListener('click', async function() {
+                if (!processor.running) {
+                    processor.running = true;
+                    processor.stepMode = true;
+                    showStatus('Modo passo a passo ativado');
+                }
+
+                const success = await processor.step();
+                
+                if (!success) {
+                    if (processor.error) {
+                        showStatus(`Erro na execução: ${processor.error}`, true);
+                    } else {
+                        showStatus('Programa finalizado');
+                    }
+                    stepBtn.disabled = true;
+                    runBtn.disabled = true;
+                } else {
+                    showStatus(`Instrução executada. PC: 0x${processor.pc.toString(16).padStart(2, '0')}`);
+                }
+                
+                updateUI();
+            });
+
+            // Reset
+            resetBtn.addEventListener('click', function() {
+                processor.reset();
+                processor.clearMemory();
+                document.getElementById('outputArea').innerHTML = '';
+                runBtn.disabled = true;
+                stepBtn.disabled = true;
+                runBtn.textContent = '▶️ Executar';
+                assembleBtn.disabled = false;
+                showStatus('Processador resetado');
+                updateMachineCode([]);
+                updateUI();
+                hideInputDialog(); // Fechar dialog de entrada se estiver aberto
+            });
+
+            // Carregar arquivo
+            loadBtn.addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.asm,.txt';
+                input.onchange = function(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            codeEditor.value = e.target.result;
+                            showStatus(`Arquivo "${file.name}" carregado`);
+                        };
+                        reader.readAsText(file);
+                    }
+                };
+                input.click();
+            });
+
+            // Salvar arquivo
+            saveBtn.addEventListener('click', function() {
+                const code = codeEditor.value;
+                if (!code.trim()) {
+                    showStatus('Nenhum código para salvar', true);
+                    return;
+                }
+
+                const blob = new Blob([code], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'programa.asm';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showStatus('Arquivo salvo');
+            });
+
+            // Dialog de entrada
+            inputOkBtn.addEventListener('click', function() {
+                const value = inputField.value.trim();
+                if (processor.inputResolve) {
+                    processor.inputResolve(value);
+                    processor.waitingForInput = false;
+                    processor.inputResolve = null;
+                }
+                hideInputDialog();
+            });
+
+            inputCancelBtn.addEventListener('click', function() {
+                if (processor.inputResolve) {
+                    processor.inputResolve('0'); // Valor padrão
+                    processor.waitingForInput = false;
+                    processor.inputResolve = null;
+                }
+                hideInputDialog();
+            });
+
+            inputField.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    inputOkBtn.click();
+                } else if (e.key === 'Escape') {
+                    inputCancelBtn.click();
+                }
+            });
+
+            // Fechar modal de entrada clicando fora
+            document.getElementById('inputModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    inputCancelBtn.click();
+                }
+            });
+
+            // Atalhos de teclado
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 's':
+                            e.preventDefault();
+                            saveBtn.click();
+                            break;
+                        case 'o':
+                            e.preventDefault();
+                            loadBtn.click();
+                            break;
+                        case 'Enter':
+                            e.preventDefault();
+                            if (!runBtn.disabled) {
+                                runBtn.click();
+                            }
+                            break;
+                    }
+                }
+                
+                // F1 para ajuda
+                if (e.key === 'F1') {
+                    e.preventDefault();
+                    showHelpDialog();
+                }
+                
+                // F5 para montar
+                if (e.key === 'F5') {
+                    e.preventDefault();
+                    assembleBtn.click();
+                }
+                
+                // F9 para executar/pausar
+                if (e.key === 'F9') {
+                    e.preventDefault();
+                    if (!runBtn.disabled) {
+                        runBtn.click();
+                    }
+                }
+                
+                // F10 para step
+                if (e.key === 'F10') {
+                    e.preventDefault();
+                    if (!stepBtn.disabled) {
+                        stepBtn.click();
+                    }
+                }
+            });
+
+            // Inicializar UI
+            updateUI();
+            updateMachineCode([]);
+            showStatus('Pronto para montar código');
+        });
+    </script>
+</body>
+</html>
